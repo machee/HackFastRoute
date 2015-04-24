@@ -1,4 +1,4 @@
-<?php
+<?hh // strict
 
 namespace FastRoute;
 
@@ -17,5 +17,5 @@ interface RouteParser {
      * 
      * @return array Parsed route data
      */
-    public function parse($route);
+    public function parse(string $route): array<mixed>;
 }

@@ -1,28 +1,32 @@
-<?php
+<?hh // strict
 
 namespace FastRoute\Dispatcher;
 
 use FastRoute\Dispatcher;
 
 abstract class RegexBasedAbstract implements Dispatcher {
-    protected $staticRouteMap;
-    protected $variableRouteData;
+    protected array<string, mixed> $staticRouteMap;
+    protected array<string, mixed> $variableRouteData;
 
-    protected abstract function dispatchVariableRoute($routeData, $uri);
+    protected abstract function dispatchVariableRoute(array<array<string, mixed>> $routeData, string $uri): array<mixed>;
 
-    public function dispatch($httpMethod, $uri) {
-        if (isset($this->staticRouteMap[$uri])) {
+    public function dispatch(string $httpMethod, string $uri): array<mixed> {
+        if (array_key_exists($uri, $this->staticRouteMap)) {
             return $this->dispatchStaticRoute($httpMethod, $uri);
         }
 
         $varRouteData = $this->variableRouteData;
-        if (isset($varRouteData[$httpMethod])) {
-            $result = $this->dispatchVariableRoute($varRouteData[$httpMethod], $uri);
+        if (array_key_exists($httpMethod, $varRouteData)) {
+            $routeData = $varRouteData[$httpMethod];
+            invariant(is_array($routeData), 'routeData item must be an array');
+            $result = $this->dispatchVariableRoute($routeData, $uri);
             if ($result[0] === self::FOUND) {
                 return $result;
             }
-        } else if ($httpMethod === 'HEAD' && isset($varRouteData['GET'])) {
-            $result = $this->dispatchVariableRoute($varRouteData['GET'], $uri);
+        } else if ($httpMethod === 'HEAD' && array_key_exists('GET', $varRouteData)) {
+            $routeData = $varRouteData['GET'];
+            invariant(is_array($routeData), 'routeData item must be an array');
+            $result = $this->dispatchVariableRoute($routeData, $uri);
             if ($result[0] === self::FOUND) {
                 return $result;
             }
@@ -36,6 +40,7 @@ abstract class RegexBasedAbstract implements Dispatcher {
                 continue;
             }
 
+            invariant(is_array($routeData), 'routeData item must be an array');
             $result = $this->dispatchVariableRoute($routeData, $uri);
             if ($result[0] === self::FOUND) {
                 $allowedMethods[] = $method;
@@ -50,12 +55,13 @@ abstract class RegexBasedAbstract implements Dispatcher {
         }
     }
 
-    protected function dispatchStaticRoute($httpMethod, $uri) {
+    protected function dispatchStaticRoute(string $httpMethod, string $uri): array<mixed> {
         $routes = $this->staticRouteMap[$uri];
 
-        if (isset($routes[$httpMethod])) {
+        invariant(is_array($routes), 'staticRouteMap item must be an array');
+        if (array_key_exists($httpMethod, $routes)) {
             return [self::FOUND, $routes[$httpMethod], []];
-        } elseif ($httpMethod === 'HEAD' && isset($routes['GET'])) {
+        } elseif ($httpMethod === 'HEAD' && array_key_exists('GET', $routes)) {
             return [self::FOUND, $routes['GET'], []];
         } else {
             return [self::METHOD_NOT_ALLOWED, array_keys($routes)];

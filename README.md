@@ -1,5 +1,5 @@
-FastRoute - Fast request router for PHP
-=======================================
+FastRoute - Fast request router for HHVM
+========================================
 
 This library provides a fast implementation of a regular expression based router. [Blog post explaining how the
 implementation works and why it is fast.][blog_post]
@@ -9,8 +9,8 @@ Usage
 
 Here's a basic usage example:
 
-```php
-<?php
+```hack
+<?hh
 
 require '/path/to/FastRoute/src/bootstrap.php';
 
@@ -20,20 +20,30 @@ $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
     $r->addRoute('GET', '/user/{name}', 'handler2');
 });
 
-$routeInfo = $dispatcher->dispatch($httpMethod, $uri);
-switch ($routeInfo[0]) {
-    case FastRoute\Dispatcher::NOT_FOUND:
-        // ... 404 Not Found
-        break;
-    case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
-        $allowedMethods = $routeInfo[1];
-        // ... 405 Method Not Allowed
-        break;
-    case FastRoute\Dispatcher::FOUND:
-        $handler = $routeInfo[1];
-        $vars = $routeInfo[2];
-        // ... call $handler with $vars
-        break;
+$routeInfos = [
+    $dispatcher->dispatch('GET',  '/user/hack/123'),
+    $dispatcher->dispatch('GET',  '/user/123'),
+    $dispatcher->dispatch('GET',  '/user/hack'),
+    $dispatcher->dispatch('HEAD', '/user/hack'),
+    $dispatcher->dispatch('GET',  '/uesr'),          // 404
+    $dispatcher->dispatch('POST', '/user/hack'),     // 405
+];
+
+foreach ($routeInfos as $routeInfo) {
+    switch ($routeInfo[0]) {
+        case FastRoute\Dispatcher::NOT_FOUND:
+            echo "404 Not Found\n";
+            break;
+        case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
+            echo "405 Method Not Allowed\n";
+            break;
+        case FastRoute\Dispatcher::FOUND:
+            $handler = $routeInfo[1];
+            $vars = $routeInfo[2];
+            // ... call $handler with $vars
+            var_dump($handler, $vars);
+            break;
+    }
 }
 ```
 
@@ -60,8 +70,8 @@ The reason `simpleDispatcher` accepts a callback for defining the routes is to a
 caching. By using `cachedDispatcher` instead of `simpleDispatcher` you can cache the generated
 routing data and construct the dispatcher from the cached information:
 
-```php
-<?php
+```hack
+<?hh
 
 $dispatcher = FastRoute\cachedDispatcher(function(FastRoute\RouteCollector $r) {
     $r->addRoute('GET', '/user/{name}/{id:[0-9]+}', 'handler0');
@@ -105,8 +115,8 @@ and the third array element is a dictionary of placeholder names to their values
 The routing process makes use of three components: A route parser, a data generator and a
 dispatcher. The three components adhere to the following interfaces:
 
-```php
-<?php
+```hack
+<?hh
 
 namespace FastRoute;
 
@@ -154,8 +164,8 @@ the former is what is being cached.)
 When using the `simpleDispatcher` / `cachedDispatcher` functions from above the override happens
 through the options array:
 
-```php
-<?php
+```hack
+<?hh
 
 $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
     /* ... */

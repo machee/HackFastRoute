@@ -1,6 +1,6 @@
 {
-  "name": "nikic/fast-route",
-  "description": "Fast request router for PHP",
+  "name": "machee/hack-fast-route",
+  "description": "Fast request router for HHVM",
   "keywords": ["routing", "router"],
   "license": "BSD-3-Clause",
   "authors": [
@@ -10,7 +10,7 @@
     }
   ],
   "require": {
-    "php": ">=5.4.0"
+    "hhvm": ">=3.6.1"
   },
   "autoload": {
     "psr-4": {

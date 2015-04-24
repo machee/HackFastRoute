@@ -1,4 +1,4 @@
-<?php
+<?hh // strict
 
 namespace FastRoute;
 
@@ -15,11 +15,11 @@ interface DataGenerator {
      * @param array $routeData
      * @param mixed $handler
      */
-    public function addRoute($httpMethod, $routeData, $handler);
+    public function addRoute(string $httpMethod, array<mixed> $routeData, mixed $handler): void;
 
     /**
      * Returns dispatcher data in some unspecified format, which
      * depends on the used method of dispatch.
      */
-    public function getData();
+    public function getData(): mixed;
 }

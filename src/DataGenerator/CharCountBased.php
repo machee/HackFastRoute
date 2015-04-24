@@ -1,13 +1,14 @@
-<?php
+<?hh // strict
 
 namespace FastRoute\DataGenerator;
+use FastRoute\Route;
 
 class CharCountBased extends RegexBasedAbstract {
-    protected function getApproxChunkSize() {
+    protected function getApproxChunkSize(): int {
         return 30;
     }
 
-    protected function processChunk($regexToRoutesMap) {
+    public function processChunk(array<string, Route> $regexToRoutesMap): array<string, mixed> {
         $routeMap = [];
         $regexes = [];
 
