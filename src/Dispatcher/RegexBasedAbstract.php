@@ -6,7 +6,7 @@ use FastRoute\Dispatcher;
 
 abstract class RegexBasedAbstract implements Dispatcher {
     protected array<string, array<string, mixed>> $staticRouteMap;
-    protected array<string, mixed> $variableRouteData;
+    protected array<string, array<array<string, mixed>>> $variableRouteData;
 
     protected abstract function dispatchVariableRoute(
         array<array<string, mixed>> $routeData,
@@ -26,16 +26,12 @@ abstract class RegexBasedAbstract implements Dispatcher {
 
         $varRouteData = $this->variableRouteData;
         if (array_key_exists($httpMethod, $varRouteData)) {
-            $routeData = $varRouteData[$httpMethod];
-            invariant(is_array($routeData), 'routeData item must be an array');
-            $result = $this->dispatchVariableRoute($routeData, $uri);
+            $result = $this->dispatchVariableRoute($varRouteData[$httpMethod], $uri);
             if ($result[0] === self::FOUND) {
                 return $result;
             }
         } else if ($httpMethod === 'HEAD' && array_key_exists('GET', $varRouteData)) {
-            $routeData = $varRouteData['GET'];
-            invariant(is_array($routeData), 'routeData item must be an array');
-            $result = $this->dispatchVariableRoute($routeData, $uri);
+            $result = $this->dispatchVariableRoute($varRouteData['GET'], $uri);
             if ($result[0] === self::FOUND) {
                 return $result;
             }
