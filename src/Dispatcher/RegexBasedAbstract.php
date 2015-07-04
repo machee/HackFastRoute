@@ -5,14 +5,23 @@ namespace FastRoute\Dispatcher;
 use FastRoute\Dispatcher;
 
 abstract class RegexBasedAbstract implements Dispatcher {
-    protected array<string, mixed> $staticRouteMap;
+    protected array<string, array<string, mixed>> $staticRouteMap;
     protected array<string, mixed> $variableRouteData;
 
-    protected abstract function dispatchVariableRoute(array<array<string, mixed>> $routeData, string $uri): array<mixed>;
+    protected abstract function dispatchVariableRoute(
+        array<array<string, mixed>> $routeData,
+        string $uri
+    ): array<mixed>;
 
     public function dispatch(string $httpMethod, string $uri): array<mixed> {
-        if (array_key_exists($uri, $this->staticRouteMap)) {
-            return $this->dispatchStaticRoute($httpMethod, $uri);
+        if (array_key_exists($httpMethod, $this->staticRouteMap) &&
+                array_key_exists($uri, $this->staticRouteMap[$httpMethod])) {
+            $handler = $this->staticRouteMap[$httpMethod][$uri];
+            return [self::FOUND, $handler, []];
+        } else if ($httpMethod === 'HEAD' && array_key_exists('GET', $this->staticRouteMap) &&
+                array_key_exists($uri, $this->staticRouteMap['GET'])) {
+            $handler = $this->staticRouteMap['GET'][$uri];
+            return [self::FOUND, $handler, []];
         }
 
         $varRouteData = $this->variableRouteData;
@@ -32,9 +41,15 @@ abstract class RegexBasedAbstract implements Dispatcher {
             }
         }
 
-        // Find allowed methods for this URI by matching against all other
-        // HTTP methods as well
+        // Find allowed methods for this URI by matching against all other HTTP methods as well
         $allowedMethods = [];
+
+        foreach ($this->staticRouteMap as $method => $uriMap) {
+            if ($method !== $httpMethod && array_key_exists($uri, $uriMap)) {
+                $allowedMethods[] = $method;
+            }
+        }
+
         foreach ($varRouteData as $method => $routeData) {
             if ($method === $httpMethod) {
                 continue;
@@ -52,19 +67,6 @@ abstract class RegexBasedAbstract implements Dispatcher {
             return [self::METHOD_NOT_ALLOWED, $allowedMethods];
         } else {
             return [self::NOT_FOUND];
-        }
-    }
-
-    protected function dispatchStaticRoute(string $httpMethod, string $uri): array<mixed> {
-        $routes = $this->staticRouteMap[$uri];
-
-        invariant(is_array($routes), 'staticRouteMap item must be an array');
-        if (array_key_exists($httpMethod, $routes)) {
-            return [self::FOUND, $routes[$httpMethod], []];
-        } elseif ($httpMethod === 'HEAD' && array_key_exists('GET', $routes)) {
-            return [self::FOUND, $routes['GET'], []];
-        } else {
-            return [self::METHOD_NOT_ALLOWED, array_keys($routes)];
         }
     }
 }

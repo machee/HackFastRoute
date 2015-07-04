@@ -2,28 +2,57 @@
 
 namespace FastRoute\RouteParser;
 
+use FastRoute\BadRouteException;
 use FastRoute\RouteParser;
 
 /**
- * Parses routes of the following form:
+ * Parses route strings of the following form:
  *
- * "/user/{name}/{id:[0-9]+}"
+ * "/user/{name}[/{id:[0-9]+}]"
  */
 class Std implements RouteParser {
     const VARIABLE_REGEX = <<<'REGEX'
-~\{
+\{
     \s* ([a-zA-Z][a-zA-Z0-9_]*) \s*
     (?:
         : \s* ([^{}]*(?:\{(?-1)\}[^{}]*)*)
     )?
-\}~x
+\}
 REGEX;
     const DEFAULT_DISPATCH_REGEX = '[^/]+';
 
-    public function parse(string $route): array<mixed> {
+    public function parse(string $route): array<array<mixed>> {
+        $matches = [];
+        $routeWithoutClosingOptionals = rtrim($route, ']');
+        $numOptionals = strlen($route) - strlen($routeWithoutClosingOptionals);
+
+        // Split on [ while skipping placeholders
+        $segments = preg_split('~' . self::VARIABLE_REGEX . '(*SKIP)(*F) | \[~x', $routeWithoutClosingOptionals);
+        if ($numOptionals !== count($segments) - 1) {
+            throw new BadRouteException("Number of opening '[' and closing ']' does not match");
+        }
+
+        $currentRoute = '';
+        $routeDatas = [];
+        foreach ($segments as $segment) {
+            if ($segment === '') {
+                throw new BadRouteException("Empty optional part");
+            }
+
+            $currentRoute .= $segment;
+            $routeDatas[] = $this->parsePlaceholders($currentRoute);
+        }
+        return $routeDatas;
+    }
+
+    /**
+     * Parses a route string that does not contain optional segments.
+     */
+    private function parsePlaceholders(string $route): array<mixed> {
         $matches = [];
         if (!preg_match_all(
-            self::VARIABLE_REGEX, $route, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER
+            '~' . self::VARIABLE_REGEX . '~x', $route, $matches,
+            PREG_OFFSET_CAPTURE | PREG_SET_ORDER
         )) {
             return [$route];
         }

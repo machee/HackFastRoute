@@ -52,7 +52,8 @@ abstract class RegexBasedAbstract implements DataGenerator {
         $routeStr = $routeData[0];
         invariant(is_string($routeStr), 'routeData must start with string');
 
-        if (array_key_exists($routeStr, $this->staticRoutes) && array_key_exists($httpMethod, $this->staticRoutes[$routeStr])) {
+        if (array_key_exists($httpMethod, $this->staticRoutes) &&
+                array_key_exists($routeStr, $this->staticRoutes[$httpMethod])) {
             throw new BadRouteException(sprintf(
                 'Cannot register two routes matching "%s" for method "%s"',
                 $routeStr, $httpMethod
@@ -70,7 +71,7 @@ abstract class RegexBasedAbstract implements DataGenerator {
             }
         }
 
-        $this->staticRoutes[$routeStr][$httpMethod] = $handler;
+        $this->staticRoutes[$httpMethod][$routeStr] = $handler;
     }
 
     private function addVariableRoute(string $httpMethod, array<mixed> $routeData, mixed $handler): void {
